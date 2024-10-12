@@ -12,8 +12,14 @@ app.use (
 ); 
 
 app.use (express.json ({limit: '20kb'}))
-app.use (express.urlencoded ({extended: true, limit: '20kb'}))/// used as a search bar reader
+app.use (express.urlencoded ({extended: true, limit: '20kb'}))/// used in a search bar reader
 app.use (express.static ('public'))
 app.use(cookieParser())
+
+// routes import
+
+import userRouter from "./routes/user.routes.js"
+
+app.use("/api/v1/users",userRouter)
 
 export {app};
