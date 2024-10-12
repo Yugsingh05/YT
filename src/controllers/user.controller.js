@@ -6,4 +6,6 @@ const RegisterUser = asyncHandler (async (req, res) => {
   });
 });
 
+
+
 export default RegisterUser;
