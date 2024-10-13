@@ -15,7 +15,11 @@ const RegisterUser = asyncHandler(async (req, res) => {
   if ([userName, email, password, fullName].some(field => !field?.trim())) {
     throw new ApiErrors(400, "All the fields are required");
   }
-
+  
+  if(!email.includes("@"))
+  {
+    throw new ApiErrors(400, "Invalid Email");
+  }
   // Check if the username already exists in the database
   const isUserNameExist = await User.findOne({ userName });
   if (isUserNameExist) {
