@@ -10,7 +10,7 @@ const generateAccessOrRefreshToken = async (userId) => {
     const user = await User.findById(userId)
     const accessToken = await user.generateAccessToken()
     const refreshToken = await user.generateRefreshToken()
-
+  
     user.refreshToken = refreshToken
     await user.save({ validateBeforeSave: false })
 
@@ -114,7 +114,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { password, email, userName } = req.body;
 
-  if (!email || !userName) {
+  if (!email && !userName) {
     throw new ApiErrors(400, "Email or userName is required");
   }
 
