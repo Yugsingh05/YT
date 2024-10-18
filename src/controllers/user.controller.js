@@ -3,6 +3,12 @@ import ApiErrors from "../utils/ApiErrors.js";
 import { User } from "../models/user.modle.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken"
+
+const options = {
+  httpOnly: true,
+  secure: true
+}
 
 const generateAccessOrRefreshToken = async (userId) => {
 
@@ -10,7 +16,7 @@ const generateAccessOrRefreshToken = async (userId) => {
     const user = await User.findById(userId)
     const accessToken = await user.generateAccessToken()
     const refreshToken = await user.generateRefreshToken()
-  
+
     user.refreshToken = refreshToken
     await user.save({ validateBeforeSave: false })
 
@@ -136,12 +142,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = await generateAccessOrRefreshToken(user._id)
 
-  const loggedInUser = await User.findById(_id).select("-password -refreshToken")
-
-  const options = {
-    httpOnly: true,
-    secure: true
-  }
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
   return res
     .status(200)
@@ -170,11 +171,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     }
   )
 
-  const options = {
-    httpOnly: true,
-    secure: true
-  }
-
   return res
     .status(200)
     .clearCookie("accessToken", options)
@@ -185,9 +181,51 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 })
 
+const refreshAccessToken = (async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+  if (!incomingRefreshToken) {
+    throw new ApiErrors(400, "something went wrong at incoming refresh token")
+  }
+
+  try {
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decodedToken?._id)
+
+    if (!user) {
+      throw new ApiErrors(400, "something went wrong at user")
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+      throw new ApiErrors(400, "tokens are not equall")
+    }
+
+    const { accessToken, refreshToken } = await generateAccessOrRefreshToken(user._id)
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "Access Token is refreshed"
+        )
+      )
+  } catch (error) {
+
+    throw new ApiErrors(401, "something wrong at refresh token")
+
+  }
+
+})
+
 
 export {
   RegisterUser,
   loginUser,
-  logoutUser
+  logoutUser,
+  refreshAccessToken,
 };
