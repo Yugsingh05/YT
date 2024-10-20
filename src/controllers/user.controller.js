@@ -166,8 +166,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined
+      $unset: {
+        refreshToken: 1 // this removes the refresh token from the database
       }
     }
   )
@@ -424,9 +424,9 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
   console.log(channel)
 
-  if (!channel?.length) {
-    throw new ApiErrors(400, "Channel does not exist")
-  }
+  // if (!channel?.length >0) {
+  //   throw new ApiErrors(400, "Channel does not exist")
+  // }
 
   return res
     .status(200)
@@ -456,13 +456,15 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               localField: "owner",
               foreignField: "_id",
               as: "owner",
-              pipeline: {
-                $project: {
-                  fullName: 1,
-                  userName: 1,
-                  avatar: 1
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    userName: 1,
+                    avatar: 1
+                  }
                 }
-              }
+              ]
             }
           }
         ]
@@ -477,16 +479,16 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     }
   ])
 
-  if(!user.length){
-    throw new ApiErrors(400,"something wrong at watchHistory")
+  if (!user.length) {
+    throw new ApiErrors(400, "something wrong at watchHistory")
   }
 
 
   return res
-  .status(200)
-  .json(
-    new ApiResponse(200,user[0].getWatchHistory,"WatchHistory created successfully")
-  )
+    .status(200)
+    .json(
+      new ApiResponse(200, user[0].getWatchHistory, "WatchHistory created successfully")
+    )
 })
 
 export {
